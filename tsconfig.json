@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig.json",
+  "compilerOptions": {
+    "target": "ES6", // 컴파일된 JS의 ECMAScript 버전
+    "module": "CommonJS", // 모듈 시스템 (Node.js 사용)
+    "skipLibCheck": true, // 라이브러리 타입 검사 건너뜀
+
+    "strict": true, // 엄격한 타입 검사
+    "forceConsistentCasingInFileNames": true, // 파일 이름 대소문자 일관성 강제
+    "esModuleInterop": true, // ES 모듈과 CommonJS 모듈 간의 상호 운용성
+    "removeComments": true, //컴파일시 주석제거
+
+    "noImplicitReturns": true, //함수에서 return 빼먹으면 에러내기
+    "noImplicitAny": true, // any 타입 암시적 사용 금지
+
+    "outDir": "./dist", // 컴파일된 파일들이 저장될 디렉터리
+    "typeRoots": ["./src/types", "node_modules/@types"] // 타입 경로 지정
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules"]
+}
