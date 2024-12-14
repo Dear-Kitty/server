@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { db } from '../config/firebaseAdmin';
-import { database } from 'firebase-admin';
 
 export const addVoca = async (req: Request, res: Response) => {
   try {

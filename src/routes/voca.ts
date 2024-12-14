@@ -1,15 +1,15 @@
 import express from 'express';
 import authenticateFirebaseToken from '../middlewares/auth';
-import { addVoca, getAllVoca, getVocaList, getVocaCreatedAt } from '../controllers/vocaController';
+import { addVoca, getAllVoca, getVocaByDayList, getVocaByDay } from '../controllers/vocaController';
 
 const router = express.Router();
 
 router.use(express.json());
 
-router.post('/add', authenticateFirebaseToken, addVoca);
+router.post('/add', addVoca);
 
 router.get('/all', authenticateFirebaseToken, getAllVoca);
-router.get('/list', authenticateFirebaseToken, getVocaList);
-router.get('/list/{createdAt}', authenticateFirebaseToken, getVocaCreatedAt);
+router.get('/list', authenticateFirebaseToken, getVocaByDayList);
+router.get('/list/{createdAt}', authenticateFirebaseToken, getVocaByDay);
 
 export default router;
