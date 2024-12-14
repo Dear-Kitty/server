@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { db } from '../config/firebaseAdmin';
 
-export const join = async (req: Request, res: Response) => {
+export const createUser = async (req: Request, res: Response) => {
   try {
     const uid = req.uid!;
     const data = {
