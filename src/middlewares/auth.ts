@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import admin from '../config/firebaseAdmin';
+import { admin } from '../config/firebaseAdmin';
 import { StatusCodes } from 'http-status-codes';
 
 export const authenticateFirebaseToken = async (req: Request, res: Response, next: NextFunction) => {
