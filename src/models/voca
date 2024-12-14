@@ -1,9 +1,0 @@
-class Voca {
-    constructor(user_id, conversation_id, created_At, meaning, word){
-        this.user_id=user_id;
-        this.conversation_id=conversation_id;
-        this.created_At=created_At;
-        this.meaning=meaning;
-        this.word=word;
-    }
-}
