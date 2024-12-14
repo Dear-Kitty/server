@@ -1,18 +1,15 @@
-const express = require("express");
-const router =express.Router();
+import express from 'express';
+import authenticateFirebaseToken from '../middlewares/auth';
+import { addVoca, getAllVoca, getVocaList, getVocaCreatedAt } from '../controllers/vocaController';
 
-const {
-    addVoca,
-    getAllVoca,
-    getVocaList,
-    getVocaCreatedAt
-} = require("../controllers/vocaController");
+const router = express.Router();
 
-//권한 설정 _middleware
+router.use(express.json());
 
-router.post("/add",,addVoca);
-router.get('/all', getAllVoca);
-router.get('/list', getVocaList);
-router.get('/list/{createdAt}', getVocaCreatedAt);
+router.post('/add', authenticateFirebaseToken, addVoca);
 
-module.exports = router
+router.get('/all', authenticateFirebaseToken, getAllVoca);
+router.get('/list', authenticateFirebaseToken, getVocaList);
+router.get('/list/{createdAt}', authenticateFirebaseToken, getVocaCreatedAt);
+
+export default router;

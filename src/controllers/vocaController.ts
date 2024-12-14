@@ -1,53 +1,107 @@
-const firebase = require('../config/firebaseAdmin');
-const Voca = require('../models/voca');
+import { Request, Response } from 'express';
+import { StatusCodes } from 'http-status-codes';
+import { db } from '../config/firebaseAdmin';
+import { database } from 'firebase-admin';
 
-const firestore = firebase.firestore();
-const vocaCollection = firestore.collection('voca');
-
-// const addVoca = async (req, res, next)=>{
-//     try{
-//         const data=req.body;
-//         const voca=await db.collection("voca").doc().set(data);
-//         res.send("Voca save successfully");
-//     }catch (error){
-//         res.status(400).send(error.message);
-//     }
-// };
-export {};
-
-const getAllVoca = (req: Request, res: Response) => {
+export const addVoca = async (req: Request, res: Response) => {
   try {
-    const snapshot = vocaCollection.select('conversation_id', 'word', 'meaning').get();
+    const uid = req.uid!;
+    const data = {
+      conversationid: req.body.conversationId,
+      word: req.body.word,
+      meaning: req.body.meaning,
+      created_at: Date.now(),
+      //status
+    };
 
-    if (snapshot.empty) {
-      console.log('No matching document found.');
-      return [];
-    }
+    await db.collection('voca').doc(uid).set(data);
 
-    const results = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      conversation_id: doc.data().conversation_id,
-      word: doc.data().word,
-      meaning: doc.data().meaning,
-    }));
-    res.status(200);
-  } catch (error) {
-    res.status(404).send('Product not found');
+    res.status(StatusCodes.CREATED).json({
+      message: '단어가 성공적으로 저장되었습니다.',
+    });
+  } catch (err) {
+    console.error('쿼리 실행 중 오류 발생', (err as Error).stack);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      message: `단어 저장 중 오류가 발생했습니다: ${(err as Error).message}`,
+    });
   }
 };
 
-// const getVocaList =async(req,res)=>{
-//     try{
+//전체 단어 목록
+export const getAllVoca = async (req: Request, res: Response) => {
+  try {
+    const userid = req.uid!;
+    const data = await db.collection('voca').select('word').select('meaning').where('userid', '==', userid).get();
 
-//     }catch
-// };
+    if (data.empty) {
+      res.status(StatusCodes.NOT_FOUND).json({
+        message: '단어를 찾을 수 없습니다.',
+      });
 
-// const getVocaCreatedAt=async(req,res )=>{
-//     try{
+      return;
+    }
 
-//     }catch
-// };
+    res.status(StatusCodes.OK).json({
+      message: '전체 단어를 성공적으로 가져왔습니다.',
+      data: data,
+    });
+  } catch (err) {
+    console.error('쿼리 실행 중 오류 발생', (err as Error).stack);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      message: `전체 단어 데이터를 가져오는 중 오류가 발생했습니다: ${(err as Error).message}`,
+    });
+  }
+};
 
-module.exports = {
-  getAllVoca,
+//날짜별 단어장 목록
+export const getVocaByDayList = async (req: Request, res: Response) => {
+  try {
+    const created_at = req.uid!;
+    const data = await db.collection('chat').select('chatid').select('topic').select('created_at').get();
+
+    if (data.empty) {
+      res.status(StatusCodes.NOT_FOUND).json({
+        message: '단어를 찾을 수 없습니다.',
+      });
+
+      return;
+    }
+
+    res.status(StatusCodes.OK).json({
+      message: '날짜별 단어장 목록을 성공적으로 가져왔습니다.',
+      data: data,
+    });
+  } catch (err) {
+    console.error('쿼리 실행 중 오류 발생', (err as Error).stack);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      message: `날짜별 단어장 데이터를 가져오는 중 오류가 발생했습니다: ${(err as Error).message}`,
+    });
+  }
+};
+
+//날짜별 단어 목록
+export const getVocaByDay = async (req: Request, res: Response) => {
+  try {
+    const chatid = req.uid!;
+    const chatData = await db.collection('chat').get();
+    const vocaData = await db.collection('voca').select('word').select('meaning').where('chatid', '==', chatid).get();
+
+    if (vocaData.empty || chatData.empty) {
+      res.status(StatusCodes.NOT_FOUND).json({
+        message: '단어를 찾을 수 없습니다.',
+      });
+
+      return;
+    }
+
+    res.status(StatusCodes.OK).json({
+      message: '단어를 성공적으로 가져왔습니다.',
+      data: vocaData,
+    });
+  } catch (err) {
+    console.error('쿼리 실행 중 오류 발생', (err as Error).stack);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      message: `날짜별 단어 데이터를 가져오는 중 오류가 발생했습니다: ${(err as Error).message}`,
+    });
+  }
 };
