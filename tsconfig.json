@@ -17,6 +17,6 @@
     "outDir": "./dist", // 컴파일된 파일들이 저장될 디렉터리
     "typeRoots": ["./src/types", "node_modules/@types"] // 타입 경로 지정
   },
-  "include": ["**/*.ts"],
+  "include": ["./**/*.ts", "src/types/**/*.d.ts"],
   "exclude": ["node_modules"]
 }
