@@ -1,18 +1,22 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { db } from '../config/firebaseAdmin';
+import openai from '../config/openai';
 
 export const createUser = async (req: Request, res: Response) => {
   try {
     const uid = req.uid!;
+    const { nickname, kittyname, age, job } = req.body;
+
+    const kittyId = await createAssistant(kittyname);
+
     const data = {
-      nickname: req.body.nickname,
-      kittyname: req.body.kittyname,
-      age: req.body.age,
-      job: req.body.job,
+      nickname: nickname,
+      kittyId: kittyId,
+      age: age,
+      job: job,
       created_at: Date.now(),
     };
-
     await db.collection('user').doc(uid).set(data);
 
     res.status(StatusCodes.CREATED).json({
@@ -55,11 +59,11 @@ export const getUser = async (req: Request, res: Response) => {
 export const updateUser = async (req: Request, res: Response) => {
   try {
     const uid = req.uid!;
+    const { nickname, age, job } = req.body;
     const data = {
-      nickname: req.body.nickname,
-      kittyname: req.body.kittyname,
-      age: req.body.age,
-      job: req.body.job,
+      nickname: nickname,
+      age: age,
+      job: job,
       // picURL 추후 추가
     };
 
@@ -74,4 +78,15 @@ export const updateUser = async (req: Request, res: Response) => {
       message: `사용자 정보 갱신 중 오류가 발생했습니다: ${(err as Error).message}`,
     });
   }
+};
+
+const createAssistant = async (kittyname: string) => {
+  const myAssistant = await openai.beta.assistants.create({
+    instructions:
+      'You are both my American friend, and personal English tutor. When I speak English sentences, you have to correct them with the correct expressions.',
+    name: kittyname,
+    model: 'gpt-4o',
+  });
+
+  return myAssistant.id;
 };
