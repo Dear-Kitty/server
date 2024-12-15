@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { db } from '../config/firebaseAdmin';
-import openai from '../config/openai';
+import openai from '../config/openAI';
 
 export const createUser = async (req: Request, res: Response) => {
   try {
@@ -12,7 +12,7 @@ export const createUser = async (req: Request, res: Response) => {
 
     const data = {
       nickname: nickname,
-      kittyId: kittyId,
+      kitty_id: kittyId,
       age: age,
       job: job,
       created_at: Date.now(),
