@@ -61,11 +61,17 @@ export const getAllVoca = async (req: Request, res: Response) => {
 //날짜별 단어장 목록
 export const getVocaByDayList = async (req: Request, res: Response) => {
   try {
-    const data = await db.collection('chat').select('chatid', 'topic', 'created_at').get();
+    const userid = req.params.userid;
+
+    const data = await db
+      .collection('chat')
+      .select('chatid', 'topic', 'created_at')
+      .where('userid', 'array-contains', userid)
+      .get();
 
     if (data.empty) {
       res.status(StatusCodes.NOT_FOUND).json({
-        message: '단어를 찾을 수 없습니다.',
+        message: '단어장을 찾을 수 없습니다.',
       });
 
       return;
