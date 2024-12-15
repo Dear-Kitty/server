@@ -37,6 +37,7 @@ export const createThread = async (req: Request, res: Response) => {
 
 export const chat = async (req: Request, res: Response) => {
   try {
+    const uid = req.uid!;
     const { threadId, assistantId, prompt } = req.body;
     await db
       .collection('chat')
@@ -60,6 +61,12 @@ export const chat = async (req: Request, res: Response) => {
         },
         { merge: true },
       );
+    }
+
+    if (answer.endsWith('[voca]')) {
+      answer = answer.split('[')[0];
+      const vocaList = answer.split('복습해야 할 단어\n')[1];
+      addVocaFromChat(vocaList, threadId, uid);
     }
 
     await db
@@ -161,4 +168,19 @@ const getChat = async (threadId: string, assistantId: string) => {
     .map((item) => item.text!.value);
 
   return textValues[0];
+};
+
+const addVocaFromChat = async (list: string, chatId: string, uid: string) => {
+  const vocaList: string[] = list.split(',');
+  vocaList.forEach(async (voca) => {
+    const temp: string[] = voca.split('/');
+    const data = {
+      chat_id: chatId,
+      user_id: uid,
+      word: temp[0],
+      meaning: temp[1],
+      created_at: Date.now(),
+    };
+    await db.collection('voca').add(data);
+  });
 };
