@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.use(express.json());
 
-router.post('/add', addVoca);
+router.post('/', addVoca);
 
 router.get('/', authenticateFirebaseToken, getAllVoca);
 router.get('/list', authenticateFirebaseToken, getVocaByDateList);

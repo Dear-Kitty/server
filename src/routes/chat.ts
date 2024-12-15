@@ -7,8 +7,8 @@ const router = express.Router();
 router.use(express.json());
 
 router.get('/', authenticateFirebaseToken, chat);
-router.get('/list', authenticateFirebaseToken, getChatList);
-router.get('/list/:id', authenticateFirebaseToken, getChatDetail);
+router.get('/history', authenticateFirebaseToken, getChatList);
+router.get('/history/:id', authenticateFirebaseToken, getChatDetail);
 
 router.post('/', authenticateFirebaseToken, createThread);
 
