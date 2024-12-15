@@ -5,7 +5,6 @@ import { firestore } from 'firebase-admin';
 
 export const addVoca = async (req: Request, res: Response) => {
   try {
-    ///const uid = req.uid!;
     const uid = req.uid!;
     const data = {
       user_id: uid,
