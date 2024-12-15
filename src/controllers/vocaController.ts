@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { db } from '../config/firebaseAdmin';
-import { firestore } from 'firebase-admin';
 
 export const addVoca = async (req: Request, res: Response) => {
   try {
@@ -31,7 +30,7 @@ export const addVoca = async (req: Request, res: Response) => {
 //전체 단어 목록
 export const getAllVoca = async (req: Request, res: Response) => {
   try {
-    const userid = req.params.user_id;
+    const userid = req.uid!;
 
     const data = await db.collection('voca').select('chatId', 'word', 'meaning').where('user_id', '==', userid).get();
 
@@ -45,7 +44,6 @@ export const getAllVoca = async (req: Request, res: Response) => {
     const results: { id: string; word: string; meaning: string }[] = [];
 
     data.forEach((doc) => {
-      console.log('[VocaId]', doc.id, '=>', doc.data().word, ': ', doc.data().meaning);
       results.push({ id: doc.id, word: doc.data().word, meaning: doc.data().meaning });
     });
     res.status(StatusCodes.OK).json({
@@ -63,7 +61,7 @@ export const getAllVoca = async (req: Request, res: Response) => {
 //날짜별 단어장 목록
 export const getVocaByDayList = async (req: Request, res: Response) => {
   try {
-    const userid = req.params.user_id;
+    const userid = req.uid!;
 
     const data = await db
       .collection('chat')
@@ -82,7 +80,6 @@ export const getVocaByDayList = async (req: Request, res: Response) => {
     const results: { id: string; topic: string; created_at: string }[] = [];
 
     data.forEach((doc) => {
-      console.log('[VocaList]', doc.id, '=>', doc.data().topic, ': ', doc.data().created_at);
       results.push({ id: doc.id, topic: doc.data().topic, created_at: doc.data().created_at });
     });
 
@@ -99,16 +96,9 @@ export const getVocaByDayList = async (req: Request, res: Response) => {
 };
 
 //날짜별 단어 목록
-export const getVocaByDay = async (req: Request, res: Response): Promise<void> => {
+export const getVocaByDate = async (req: Request, res: Response): Promise<void> => {
   try {
     const created_at = req.params.created_at;
-
-    if (!created_at) {
-      res.status(StatusCodes.BAD_REQUEST).json({
-        message: 'created_at 파라미터가 필요합니다.',
-      });
-      return;
-    }
 
     const chatData = await db
       .collection('chat')
@@ -132,16 +122,17 @@ export const getVocaByDay = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    const vocaByDayData = await db.collection('voca').where('chat_id', 'in', chatId).get();
+    const vocaByDateData = await db.collection('voca').where('chat_id', 'in', chatId).get();
+    // where 방식 논의 후 결정
 
-    if (vocaByDayData.empty) {
+    if (vocaByDateData.empty) {
       res.status(StatusCodes.NOT_FOUND).json({
         message: '조건에 맞는 voca 데이터를 찾을 수 없습니다.',
       });
       return;
     }
 
-    const vocaData = vocaByDayData.docs.map((doc) => ({
+    const vocaData = vocaByDateData.docs.map((doc) => ({
       chat_id: doc.data().chat_id,
       word: doc.data().word,
       meaning: doc.data().meaning,
