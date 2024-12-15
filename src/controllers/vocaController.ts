@@ -84,45 +84,56 @@ export const getVocaByDayList = async (req: Request, res: Response) => {
 };
 
 //날짜별 단어 목록
-export const getVocaByDay = async (req: Request, res: Response) => {
+export const getVocaByDay = async (req: Request, res: Response): Promise<void> => {
   try {
     const created_at = req.params.created_at;
 
     if (!created_at) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
+      res.status(StatusCodes.BAD_REQUEST).json({
         message: 'created_at 파라미터가 필요합니다.',
       });
+      return;
     }
 
     const chatData = await db.collection('chat').where('created_at', '==', created_at).get();
 
     if (chatData.empty) {
-      return res.status(StatusCodes.NOT_FOUND).json({
+      res.status(StatusCodes.NOT_FOUND).json({
         message: '단어장을 찾을 수 없습니다.',
       });
+      return;
     }
 
     const chatIds = chatData.docs.map((doc) => doc.data().chatid);
 
     if (chatIds.length === 0) {
-      return res.status(StatusCodes.NOT_FOUND).json({
+      res.status(StatusCodes.NOT_FOUND).json({
         message: 'chatid를 찾을 수 없습니다.',
       });
+      return;
     }
 
-    const vocaData = await db.collection('voca').where('chatid', 'array-contains-any', chatIds).get();
+    const vocaByDayListData: any[] = [];
+    for (let i = 0; i < chatIds.length; i += 10) {
+      const batchIds = chatIds.slice(i, i + 10);
+      const vocaData = await db.collection('voca').where('chatid', 'array-contains-any', batchIds).get();
 
-    if (vocaData.empty) {
+      if (!vocaData.empty) {
+        const batchData = vocaData.docs.map((doc) => ({
+          chatid: doc.data().chatid,
+          word: doc.data().word,
+          meaning: doc.data().meaning,
+        }));
+        vocaByDayListData.push(...batchData);
+      }
+    }
+
+    if (vocaByDayListData.length === 0) {
       res.status(StatusCodes.NOT_FOUND).json({
         message: '단어를 찾을 수 없습니다.',
       });
       return;
     }
-    const vocaByDayListData = vocaData.docs.map((doc) => ({
-      chatid: doc.data().chatid,
-      word: doc.data().word,
-      meaning: doc.data().meaning,
-    }));
 
     res.status(StatusCodes.OK).json({
       message: '단어를 성공적으로 가져왔습니다.',
