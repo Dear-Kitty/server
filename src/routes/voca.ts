@@ -6,10 +6,10 @@ const router = express.Router();
 
 router.use(express.json());
 
-router.post('/add', addVoca);
+router.post('/add', authenticateFirebaseToken, addVoca);
 
-router.get('/all', authenticateFirebaseToken, getAllVoca);
-router.get('/list', authenticateFirebaseToken, getVocaByDayList);
-router.get('/list/{createdAt}', authenticateFirebaseToken, getVocaByDay);
+router.get('/:userid', authenticateFirebaseToken, getAllVoca);
+router.get('/{userid}/list', authenticateFirebaseToken, getVocaByDayList);
+router.get('/{userid}/list/{createdAt}', authenticateFirebaseToken, getVocaByDay);
 
 export default router;

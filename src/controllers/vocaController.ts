@@ -1,12 +1,13 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { db } from '../config/firebaseAdmin';
+import { firestore } from 'firebase-admin';
 
 export const addVoca = async (req: Request, res: Response) => {
   try {
     const uid = req.uid!;
     const data = {
-      conversationid: req.body.conversationId,
+      chatid: req.body.chatid,
       word: req.body.word,
       meaning: req.body.meaning,
       created_at: Date.now(),
@@ -29,8 +30,13 @@ export const addVoca = async (req: Request, res: Response) => {
 //전체 단어 목록
 export const getAllVoca = async (req: Request, res: Response) => {
   try {
-    const userid = req.uid!;
-    const data = await db.collection('voca').select('word').select('meaning').where('userid', '==', userid).get();
+    const userid = req.params.userid;
+
+    const data = await db
+      .collection('voca')
+      .select('chatid', 'word', 'meaning')
+      .where('userid', 'array-contains', userid)
+      .get();
 
     if (data.empty) {
       res.status(StatusCodes.NOT_FOUND).json({
@@ -55,8 +61,7 @@ export const getAllVoca = async (req: Request, res: Response) => {
 //날짜별 단어장 목록
 export const getVocaByDayList = async (req: Request, res: Response) => {
   try {
-    const created_at = req.uid!;
-    const data = await db.collection('chat').select('chatid').select('topic').select('created_at').get();
+    const data = await db.collection('chat').select('chatid', 'topic', 'created_at').get();
 
     if (data.empty) {
       res.status(StatusCodes.NOT_FOUND).json({
@@ -81,21 +86,47 @@ export const getVocaByDayList = async (req: Request, res: Response) => {
 //날짜별 단어 목록
 export const getVocaByDay = async (req: Request, res: Response) => {
   try {
-    const chatid = req.uid!;
-    const chatData = await db.collection('chat').get();
-    const vocaData = await db.collection('voca').select('word').select('meaning').where('chatid', '==', chatid).get();
+    const created_at = req.params.created_at;
 
-    if (vocaData.empty || chatData.empty) {
+    if (!created_at) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message: 'created_at 파라미터가 필요합니다.',
+      });
+    }
+
+    const chatData = await db.collection('chat').where('created_at', '==', created_at).get();
+
+    if (chatData.empty) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: '단어장을 찾을 수 없습니다.',
+      });
+    }
+
+    const chatIds = chatData.docs.map((doc) => doc.data().chatid);
+
+    if (chatIds.length === 0) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: 'chatid를 찾을 수 없습니다.',
+      });
+    }
+
+    const vocaData = await db.collection('voca').where('chatid', 'array-contains-any', chatIds).get();
+
+    if (vocaData.empty) {
       res.status(StatusCodes.NOT_FOUND).json({
         message: '단어를 찾을 수 없습니다.',
       });
-
       return;
     }
+    const vocaByDayListData = vocaData.docs.map((doc) => ({
+      chatid: doc.data().chatid,
+      word: doc.data().word,
+      meaning: doc.data().meaning,
+    }));
 
     res.status(StatusCodes.OK).json({
       message: '단어를 성공적으로 가져왔습니다.',
-      data: vocaData,
+      data: vocaByDayListData,
     });
   } catch (err) {
     console.error('쿼리 실행 중 오류 발생', (err as Error).stack);
