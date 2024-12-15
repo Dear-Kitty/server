@@ -5,16 +5,18 @@ import { firestore } from 'firebase-admin';
 
 export const addVoca = async (req: Request, res: Response) => {
   try {
+    ///const uid = req.uid!;
     const uid = req.uid!;
     const data = {
-      chatid: req.body.chatid,
+      user_id: uid,
+      chat_id: req.body.chatId,
       word: req.body.word,
       meaning: req.body.meaning,
       created_at: Date.now(),
       //status
     };
 
-    await db.collection('voca').doc(uid).set(data);
+    await db.collection('voca').add(data);
 
     res.status(StatusCodes.CREATED).json({
       message: '단어가 성공적으로 저장되었습니다.',
@@ -30,13 +32,9 @@ export const addVoca = async (req: Request, res: Response) => {
 //전체 단어 목록
 export const getAllVoca = async (req: Request, res: Response) => {
   try {
-    const userid = req.params.userid;
+    const userid = req.params.user_id;
 
-    const data = await db
-      .collection('voca')
-      .select('chatid', 'word', 'meaning')
-      .where('userid', 'array-contains', userid)
-      .get();
+    const data = await db.collection('voca').select('chatId', 'word', 'meaning').where('user_id', '==', userid).get();
 
     if (data.empty) {
       res.status(StatusCodes.NOT_FOUND).json({
@@ -45,10 +43,15 @@ export const getAllVoca = async (req: Request, res: Response) => {
 
       return;
     }
+    const results: { id: string; word: string; meaning: string }[] = [];
 
+    data.forEach((doc) => {
+      console.log('[VocaId]', doc.id, '=>', doc.data().word, ': ', doc.data().meaning);
+      results.push({ id: doc.id, word: doc.data().word, meaning: doc.data().meaning });
+    });
     res.status(StatusCodes.OK).json({
       message: '전체 단어를 성공적으로 가져왔습니다.',
-      data: data,
+      results,
     });
   } catch (err) {
     console.error('쿼리 실행 중 오류 발생', (err as Error).stack);
@@ -61,12 +64,13 @@ export const getAllVoca = async (req: Request, res: Response) => {
 //날짜별 단어장 목록
 export const getVocaByDayList = async (req: Request, res: Response) => {
   try {
-    const userid = req.params.userid;
+    const userid = req.params.user_id;
 
     const data = await db
       .collection('chat')
-      .select('chatid', 'topic', 'created_at')
-      .where('userid', 'array-contains', userid)
+      .select('chat_id', 'topic', 'created_at')
+      .where('user_id', '==', userid)
+      .orderBy('created_at', 'desc')
       .get();
 
     if (data.empty) {
@@ -76,10 +80,16 @@ export const getVocaByDayList = async (req: Request, res: Response) => {
 
       return;
     }
+    const results: { id: string; topic: string; created_at: string }[] = [];
+
+    data.forEach((doc) => {
+      console.log('[VocaList]', doc.id, '=>', doc.data().topic, ': ', doc.data().created_at);
+      results.push({ id: doc.id, topic: doc.data().topic, created_at: doc.data().created_at });
+    });
 
     res.status(StatusCodes.OK).json({
       message: '날짜별 단어장 목록을 성공적으로 가져왔습니다.',
-      data: data,
+      results,
     });
   } catch (err) {
     console.error('쿼리 실행 중 오류 발생', (err as Error).stack);
@@ -101,7 +111,11 @@ export const getVocaByDay = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    const chatData = await db.collection('chat').where('created_at', '==', created_at).get();
+    const chatData = await db
+      .collection('chat')
+      .select('chat_id', 'created_at')
+      .where('created_at', '==', created_at)
+      .get();
 
     if (chatData.empty) {
       res.status(StatusCodes.NOT_FOUND).json({
@@ -110,40 +124,33 @@ export const getVocaByDay = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    const chatIds = chatData.docs.map((doc) => doc.data().chatid);
+    const chatId: string[] = chatData.docs.map((doc) => doc.id);
 
-    if (chatIds.length === 0) {
+    if (chatId.length === 0) {
       res.status(StatusCodes.NOT_FOUND).json({
-        message: 'chatid를 찾을 수 없습니다.',
+        message: 'chat_id를 찾을 수 없습니다.',
       });
       return;
     }
 
-    const vocaByDayListData: any[] = [];
-    for (let i = 0; i < chatIds.length; i += 10) {
-      const batchIds = chatIds.slice(i, i + 10);
-      const vocaData = await db.collection('voca').where('chatid', 'array-contains-any', batchIds).get();
+    const vocaByDayData = await db.collection('voca').where('chat_id', 'in', chatId).get();
 
-      if (!vocaData.empty) {
-        const batchData = vocaData.docs.map((doc) => ({
-          chatid: doc.data().chatid,
-          word: doc.data().word,
-          meaning: doc.data().meaning,
-        }));
-        vocaByDayListData.push(...batchData);
-      }
-    }
-
-    if (vocaByDayListData.length === 0) {
+    if (vocaByDayData.empty) {
       res.status(StatusCodes.NOT_FOUND).json({
-        message: '단어를 찾을 수 없습니다.',
+        message: '조건에 맞는 voca 데이터를 찾을 수 없습니다.',
       });
       return;
     }
+
+    const vocaData = vocaByDayData.docs.map((doc) => ({
+      chat_id: doc.data().chat_id,
+      word: doc.data().word,
+      meaning: doc.data().meaning,
+    }));
 
     res.status(StatusCodes.OK).json({
       message: '단어를 성공적으로 가져왔습니다.',
-      data: vocaByDayListData,
+      data: vocaData,
     });
   } catch (err) {
     console.error('쿼리 실행 중 오류 발생', (err as Error).stack);
