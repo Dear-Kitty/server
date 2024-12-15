@@ -30,9 +30,9 @@ export const addVoca = async (req: Request, res: Response) => {
 //전체 단어 목록
 export const getAllVoca = async (req: Request, res: Response) => {
   try {
-    const userid = req.uid!;
+    const uid = req.uid!;
 
-    const data = await db.collection('voca').select('chatId', 'word', 'meaning').where('user_id', '==', userid).get();
+    const data = await db.collection('voca').select('chatId', 'word', 'meaning').where('user_id', '==', uid).get();
 
     if (data.empty) {
       res.status(StatusCodes.NOT_FOUND).json({
@@ -59,14 +59,14 @@ export const getAllVoca = async (req: Request, res: Response) => {
 };
 
 //날짜별 단어장 목록
-export const getVocaByDayList = async (req: Request, res: Response) => {
+export const getVocaByDateList = async (req: Request, res: Response) => {
   try {
-    const userid = req.uid!;
+    const uid = req.uid!;
 
     const data = await db
       .collection('chat')
       .select('chat_id', 'topic', 'created_at')
-      .where('user_id', '==', userid)
+      .where('user_id', '==', uid)
       .orderBy('created_at', 'desc')
       .get();
 
