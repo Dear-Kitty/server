@@ -34,9 +34,9 @@ export const getUser = async (req: Request, res: Response) => {
   try {
     const uid = req.uid!;
 
-    const userData = await db.collection('user').doc(uid).get();
+    const data = await db.collection('user').doc(uid).get();
 
-    if (!userData.exists) {
+    if (!data.exists) {
       res.status(StatusCodes.NOT_FOUND).json({
         message: '사용자를 찾을 수 없습니다.',
       });
@@ -44,9 +44,18 @@ export const getUser = async (req: Request, res: Response) => {
       return;
     }
 
+    const assistant = await openai.beta.assistants.retrieve(data.get('kitty_id'));
+
+    const result = {
+      nickname: data.get('nickname'),
+      kittyname: assistant.name,
+      age: data.get('age'),
+      job: data.get('job'),
+    };
+
     res.status(StatusCodes.OK).json({
       message: '사용자 데이터를 성공적으로 가져왔습니다.',
-      data: userData,
+      data: result,
     });
   } catch (err) {
     console.error('쿼리 실행 중 오류 발생', (err as Error).stack);
